@@ -1,14 +1,19 @@
 package reseau.adresses;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+
+
+
 /**
  * created on 09/02/2016
  * @author Xavier CHOPIN
  */
-
-
-public class Adresse {
-
+public class Adresse implements Iterable<Octet> {
     protected Octet[] alo;
+
+
 
     /**
      * Constructeur de copie
@@ -30,35 +35,30 @@ public class Adresse {
      * @exception AssertionError si al est null
      */
     public Adresse(Octet... al) {
-        int i = 0;
+        assert al != null : "Adresse indéfinie";
+
         this.alo = new Octet[al.length];
-        for( Octet o : al ) {
-            if ( o == null) {
-                throw new AssertionError("Erreur: l'argument est null");
-            }else{
-                alo[i] = o;
-                i++;
-            }
-
-        }
-
+        this.setOctets(al);
     }
+
 
     /** Adresse 0
      * @param nbBits nombre de bits
      * @throw AssertionError si le nombre total de bits n'est pas un multiple de 8 supérieur ou égal à 8
      */
     public Adresse(int nbBits) {
-        // deuxième test un peu inutile mais bon ...
         if ( (nbBits%8 !=0 ) || (nbBits < 8) ) {
             throw new AssertionError("Erreur: Pas un multiple de 8");
         }else{
-            int nb = nbBits / 8;
-            this.alo = new Octet[nb];
-            for (int i = 0; i < nb; i++){
-                this.alo[i] = new Octet();
+            int nbOctets = nbBits / 8;
+
+            this.alo = new Octet[nbOctets];
+
+            for(int k = 0; k < nbOctets; ++k) {
+                this.alo[k] = new Octet();
             }
         }
+
     }
 
     /** Adresse masque
@@ -72,7 +72,6 @@ public class Adresse {
         if ( (nbBits%8 !=0 ) || (nbBits < 8) || (nbBitsUn < 0) || (nbBitsUn > nbBits) ) {
             throw new AssertionError("Erreur");
         }else {
-
             Octet[] tab=new Octet[nbBits/8];
             int compteurOctet=0;
             int compteurBits=0;
@@ -91,24 +90,16 @@ public class Adresse {
                         if (compteurBits == i%8 && i==nbBitsUn){
                             tab[compteurOctet++] = o;
                         }
-
-
                     }
-
                 }
-
             }
+
             for (int i = compteurOctet; i < nbBits/8; i++) {
                 tab[i]=new Octet();
             }
+
             this.alo=tab;
-
         }
-    }
-
-
-    public Octet[] getAlo(){
-        return this.alo;
     }
 
     /**
@@ -146,26 +137,28 @@ public class Adresse {
         return alo.length * 8 ;
     }
 
+
     /**
      * @return le nombre d'octets
      */
     public int getNbreOctets() {
-        return alo.length;
+        return this.alo.length;
     }
+
 
     /**
      * Appliquer un masque
      * @param masque masque à appliquer
-     * @exception AssertionError si le masque et le receveur ne sont pas de la même taille
      */
     public void masquer(Adresse masque) {
-        if (getNbreOctets() != masque.getNbreOctets()){
-            throw new AssertionError("Erreur: different");
-        }else{
-             for (int i = 0 ; i < this.alo.length ; i++){
-                 alo[i].masquer(masque.getAlo()[i]);
-             }
+        assert masque.size() == this.size() : "Taille de masque incorrecte";
+
+        for(int k = 0; k < this.getNbreOctets(); ++k) {
+            Octet no = new Octet(this.getOctet(k));
+            no.masquer(masque.getOctet(k));
+            this.setOctet(no, k);
         }
+
     }
 
     /**
@@ -177,22 +170,16 @@ public class Adresse {
         }
     }
 
-    /**  Fixer les octets
-     * @param alo octets
-     * @exception AssertionError si alo est null
-     */
-    public void setOctets(Octet... alo)  {
-        int i = 0;
-        this.alo = new Octet[alo.length];
-        for( Octet o : alo ) {
-            if ( o == null) {
-                throw new AssertionError("Erreur: l'argument est null");
-            }else{
-                this.alo[i] = o;
-                i++;
-            }
+    public void setOctets(Octet... alo) {
+        assert alo != null : "Paramètre incorrect";
 
-        }
+        this.alo = alo;
+    }
+
+    public Octet[] getAlo() { return this.alo;};
+
+    public Octet[] getOctets() {
+        return this.alo;
     }
 
     /**
@@ -209,7 +196,6 @@ public class Adresse {
         }
 
     }
-
     /**
      * Consulter un des octets de l'adresse
      * @param k rang de l'octet
@@ -226,25 +212,97 @@ public class Adresse {
         return res;
     }
 
-    public String toString() {
+    public Iterator<Octet> iterator() {
+        return Arrays.asList(this.alo).iterator();
+    }
 
-        String res = "";
+    public int hashCode() {
+        return this.alo[0].getValue();
+    }
 
-        if (getNbreOctets() > 1) {
-            for (int i = 0; i < this.getNbreOctets(); i++) {
-
-                res += this.getOctet(i);
-                if (i != this.getNbreOctets()-1) {
-                    res += ".";
-                }
-            }
-
+    public boolean equals(Object obj) {
+        if(obj == null) {
+            return false;
+        } else if(this.getClass() != obj.getClass()) {
+            return false;
         } else {
-            res= this.getOctet(0).toString();
+            Adresse other = (Adresse)obj;
+            return this.toString().equals(other.toString());
+        }
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder("");
+
+        for(int i = 0; i < this.alo.length; i++) {
+            sb.append(this.alo[i] + ".");
         }
 
-        return res;
+        sb.deleteCharAt(sb.length() - 1);
+        return sb.toString();
 
     }
+
+    public static void main(String[] args) {
+        Adresse adr = new Adresse("192.45.43.100");
+
+        assert adr.toString().equals("192.45.43.100");
+
+        Adresse mask = new Adresse("255.255.255.255");
+        adr.masquer(mask);
+
+        assert mask.toString().equals("255.255.255.255");
+
+        assert adr.toString().equals("192.45.43.100");
+
+        adr = new Adresse("192.45.43.100");
+        mask = new Adresse("255.255.255.000");
+        adr.masquer(mask);
+
+        assert mask.toString().equals("255.255.255.0");
+
+        assert adr.toString().equals("192.45.43.0");
+
+        adr = new Adresse(16, 8);
+
+        assert adr.toString().equals("255.0");
+
+        adr.inverser();
+
+        assert adr.toString().equals("0.255");
+
+        adr = new Adresse(32, 8);
+
+        assert adr.toString().equals("255.0.0.0");
+
+        adr.inverser();
+
+        assert adr.toString().equals("0.255.255.255");
+
+        adr = new Adresse(32, 12);
+
+        assert adr.toString().equals("255.240.0.0");
+
+        adr.inverser();
+
+        assert adr.toString().equals("0.15.255.255");
+
+        adr = new Adresse(32, 17);
+
+        assert adr.toString().equals("255.255.128.0");
+
+        adr.inverser();
+
+        assert adr.toString().equals("0.0.127.255");
+
+        adr = new Adresse(32, 17);
+        Adresse adr2 = new Adresse(32, 17);
+
+        assert adr.equals(adr2);
+
+        assert adr.hashCode() == adr2.hashCode();
+
+    }
+
 
 }

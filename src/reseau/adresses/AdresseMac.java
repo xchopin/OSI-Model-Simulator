@@ -1,8 +1,5 @@
 package reseau.adresses;
 
-import reseau.adresses.Adresse;
-import reseau.adresses.Octet;
-
 public class AdresseMac extends Adresse {
     public AdresseMac(Adresse a) {
         super(a);

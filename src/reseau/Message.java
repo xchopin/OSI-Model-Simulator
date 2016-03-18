@@ -1,211 +1,166 @@
 package reseau;
-import reseau.adresses.*;
+
+import reseau.adresses.Adresse;
+import reseau.adresses.AdresseMac;
+import reseau.adresses.Octet;
 import java.util.ArrayList;
+import java.util.Iterator;
+
 
 
 /**
  * @author Xavier Chopin
  */
 
-public class Message {
 
-    ArrayList<Octet> liste;
+public class Message implements Iterable<Octet> {
+    protected ArrayList<Octet> alo;
 
     public Message() {
-        this.liste = new ArrayList<Octet>();
+        this.alo = new ArrayList();
     }
-    
-    /**
-     * Constructeur de copie
-     * @param mess 
-     * @exception AssertionError si mess est null
-     */
+
     public Message(Message mess) {
         if (mess == null){
             throw new AssertionError("Erreur");
-        }else{
-            this.liste = new ArrayList<Octet>(mess.liste);
+        }else {
+            this.alo = new ArrayList(mess.alo);
         }
-
     }
-    
+
     /**
      * @param v des petits entiers qui constituent le message
      */
+
     public Message(short... v) {
-        this.liste = new ArrayList<Octet>(v.length); // allocation mémoire, mieux optimisé si on connait l'espace nécessaire de base //cf: API Java
+        this.alo = new ArrayList<Octet>(v.length); // allocation mémoire, mieux optimisé si on connait l'espace nécessaire de base //cf: API Java
         for( short b : v ) {
-            this.liste.add(new Octet((int) b));
+            this.alo.add(new Octet((int) b));
         }
 
     }
-    
+
+
     /**
      * @param v des entiers qui constituent le message
      * Sujet: Int codé sur deux octets
      */
     public Message(int... v) {
-        int taille, part1, part2, diviseur;
-        this.liste = new ArrayList<Octet>( v.length * 2); // allocation mémoire, mieux optimisé si on connait l'espace nécessaire de base //cf: API Java
-        for( int b : v ) {
+        this.alo = new ArrayList();
+        int[] arr$ = v;
+        int len$ = v.length;
 
-            if (b > 255){
-                /**  Méthode:
-                 *
-                 * I)
-                 * Big Endian:    1)   256   => (taille <- 3
-                 *                              diviseur <- ( (3-2) * 10) = 10 //// nb/diviseur => 25
-                 *                               25 * diviseur = 250 ainsi: 256 - 250 = 6
-                 *                                      =>  octet1: 25 | octet2: 6 <=  MARCHE
-                 *
-                 *                        2)  7500   => (taille <- 4 , diviseur <- (4-2) * 10 = 100 ,  nb/diviseur => 75
-                 *                              Ensuite: 75 * diviseur : 7500 , 7500 -7500 = 0 ...
-                 *                              
-                 *                                          NE MARCHE PAS TOTALEMENT (UN SEUL ZERO AU LIEU DE DEUX)
-                 *
-                 *
-                 *                         3)  7501   => (taille <- 4 , diviseur <- (4-2) * 10 = 100 ,  nb/diviseur => 75
-                 *                              Ensuite: 75 * diviseur : 7500 , 7500 -7501 = 1 ...
-                 *
-                 *                                              =>  octet1: 75 | octet2: 1 <=
-                 *                                    NE MARCHE PAS TOTALEMENT (PAS DE ZERO AVANT LE 1)
-                 *
-                 *
-                 */
-
-                taille = String.valueOf(b).length();
-                diviseur = (taille-2) * 10;
-                part1 = (int) Math.floor( (  b / diviseur ) ); // prend la valeur inférieur ex: 15.6 devient 15
-                part2 = b - (part1 * diviseur);
-                this.liste.add(new Octet(part1));
-                this.liste.add(new Octet(part2));
-
-            }else{
-
-                this.liste.add(new Octet());
-                this.liste.add(new Octet(b));
-            }
-
-
-
+        for(int i$ = 0; i$ < len$; ++i$) {
+            int x = arr$[i$];
+            this.ajouter((int)x);
         }
+
     }
 
 
-
     /**
-     * @param mot 
+     * @param mot
      */
     public Message(String mot) {
-        this.liste = new ArrayList<Octet>();
+
+        this.alo = new ArrayList<Octet>();
         char[] tab = mot.toCharArray();
 
         for (int i = 0; i<tab.length;i++){
-            this.liste.add( new Octet( (int)(tab[i]) ) );
+            this.alo.add( new Octet( (int)(tab[i]) ) );
         }
 
     }
-    
-    /**
-     * @param adr 
-     */
+
     public Message(Adresse adr) {
-        this.liste = new ArrayList<Octet>();
+        this.alo = new ArrayList<>();
 
         for ( int i = 0 ; i < adr.getAlo().length ; i++){
-            this.liste.add( adr.getOctet(i) );
+            this.alo.add( adr.getOctet(i) );
         }
+    }
 
-    }
-        
-    /**
-     * @return le nombre d'octets
-     */
     public int size() {
-        return this.liste.size();
+        return this.alo.size();
     }
-    
+
+
     /**
-     * Ajouter un petit entier à la fin
-     * @param x
+     * Ajouter un entier à la fin
+     * @param x : un int
      */
     public void ajouter(short x) {
-        this.liste.add(new Octet( (int) x ));
+        this.alo.add(new Octet(x));
     }
-    
+
+
     /**
-     * Ajouter un entier à la fin 
-     * @param x
+     * Ajouter un entier à la fin
+     * @param x : un short
      */
     public void ajouter(int x) {
-        int taille, part1, part2, diviseur;
-
-        if (x > 255){
-            taille = String.valueOf(x).length();
-            diviseur = (taille-2) * 10;
-            part1 = (int) Math.floor( (  x / diviseur ) ); // prend la valeur inférieur ex: 15.6 devient 15
-            part2 = x - (part1 * diviseur);
-            this.liste.add(new Octet(part1));
-            this.liste.add(new Octet(part2));
-        }else{
-            this.liste.add(new Octet());
-            this.liste.add(new Octet( x ));
-        }
-
-
+        int xForts = x / 128;
+        int xFaibles = x % 128;
+        this.alo.add(new Octet(xForts));
+        this.alo.add(new Octet(xFaibles));
     }
-    
+
+
+
     /**
      * Ajouter un octet à la fin
-     * @param o 
+     * @param o
      * @exception AssertionError si o est null
      */
     public void ajouter(Octet o) {
         if (o == null){
             throw new AssertionError("Erreur");
         }else{
-            this.liste.add(o);
+            this.alo.add(o);
         }
-
     }
-    
+
+
     /**
      * Concaténer un autre message
      * @param mess message à ajouter à la fin
      * @exception AssertionError si mess est null
      */
     public void ajouter(Message mess) {
-        if (mess == null){
-            throw new AssertionError("Erreur");
-        }else{
-            for (int i = 0; i < mess.liste.size(); i++){
-              this.liste.add(mess.liste.get(i));
-            }
+        assert mess != null : "Message indéfini :" + mess;
+
+        Iterator i = mess.iterator();
+
+        while(i.hasNext()) {
+            Octet o = (Octet)i.next();
+            this.ajouter((Octet)o);
         }
+
     }
-    
-    /**
-     * Ajouter les octets d'une adresse à la fin
-     * @param adr
-     * @exception AssertionError si adr est null
-     */
+
+    public ArrayList<Octet> getAlo(){
+        return this.alo;
+    }
+
     public void ajouter(Adresse adr) {
         if (adr == null){
             throw new AssertionError("Erreur");
         }else{
             for ( int i = 0 ; i < adr.getAlo().length ; i++){
-                this.liste.add( adr.getOctet(i) );
+                this.alo.add(adr.getOctet(i));
             }
         }
     }
-    
+
+
+
     @Override
     public String toString() {
         int i = 0;
         String res = "[";
-        for( Octet o : this.liste ) {
+        for( Octet o : this.alo ) {
             i++;
-            if (i == liste.size()) {
+            if (i == alo.size()) {
                 res += o.toString();
             }else{
                 res += o.toString() + ", ";
@@ -214,42 +169,33 @@ public class Message {
         }
         return res + "]";
     }
-
-    /**
-     * Extraire les 2 octets situés en index et index+1 pour en faire un entier 
-     * octets forts puis faibles (big endian)
-     * @param index
-     * @exception AssertionError si index ou index+1 n'est pas dans le domaine du tableau
-     * @return un entier
-     */
-    public int extraireEntier(int index) {
-        int res;
-
-        if (index < 0 || index+1 > this.liste.size()){
-            throw new AssertionError("Erreur");
-        }else{
-            // marche jusqu'à 999, j'ai rien trouvé de mieux...
-            res = ( (this.liste.get(index).getValue() * 10) + this.liste.get(index+1).getValue());
-        }
-
-        return res;
+    public Iterator<Octet> iterator() {
+        return this.alo.iterator();
     }
-    
+
+    public int extraireEntier(int index) {
+        assert index >= 0 && index <= this.alo.size() - 1 : "Index incorrect :" + index;
+
+        Octet forts = (Octet)this.alo.get(index);
+        Octet faibles = (Octet)this.alo.get(index + 1);
+        return forts.getValue() * 128 + faibles.getValue();
+    }
+
     /**
      * Extraire les nbOctets premiers octets pour en faire une adresse
      * @param nbOctets
-     * @exception AssertionError si nbOctets > longueur du message 
+     * @exception AssertionError si nbOctets > longueur du message
      * @return une adresse
      */
     public Adresse extraireAdresse(int nbOctets) {
         Adresse adr = null;
-        if (nbOctets > this.liste.size() ){
+        if (nbOctets > this.alo.size() ){
             throw new AssertionError("Erreur");
         }else{
-           Octet[] tab = new Octet[nbOctets];
+            Octet[] tab = new Octet[nbOctets];
 
             for (int i = 0; i < nbOctets ; i++){
-                tab[i] = this.liste.get(i);
+                tab[i] = this.alo.get(i);
             }
 
             adr = new Adresse(tab);
@@ -258,7 +204,6 @@ public class Message {
 
         return adr;
     }
-
     /**
      * Extraire les 6 premiers octets pour en faire une adresse Mac
      * @exception AssertionError si le message ne contient pas au moins 8 octets
@@ -267,13 +212,13 @@ public class Message {
     public AdresseMac extraireAdresseMac() {
 
         AdresseMac adr = null;
-        if (this.liste.size() < 8 ){
+        if (this.alo.size() < 8 ){
             throw new AssertionError("Erreur");
         }else{
             Octet[] tab = new Octet[6];
 
             for (int i = 0; i < 6 ; i++){
-                tab[i] = this.liste.get(i);
+                tab[i] = this.alo.get(i);
             }
 
             adr = new AdresseMac(tab);
@@ -284,42 +229,41 @@ public class Message {
     }
 
 
+
     /**
-     * Transformer le message en une suite de lettres, si possible 
+     * Transformer le message en une suite de lettres, si possible
      * @return null si l'un des octets n'est pas une lettre (maj ou min)
      */
     public String extraireChaine() {
-        String res = "";
+        StringBuilder sb = new StringBuilder("");
+        Iterator i$ = this.alo.iterator();
 
-        for( Octet o : this.liste ) {
-            if (o.estUneLettre() == false){
-                return null;
-            }else{
-                res += Character.toString((char) o.getValue());
+        while(i$.hasNext()) {
+            Octet o = (Octet)i$.next();
+            if(o.estUneLettre() || o.estUnPoint()) {
+                sb.append((char)o.getValue());
             }
         }
 
-        return res ;
+        return sb.toString();
     }
 
     /**
      * Augmenter de i chaque octet compris entre bi et bs
-     * @param i 
-     * @param bi 
-     * @param bs 
+     * @param i
+     * @param bi
+     * @param bs
      */
     public void augmenter(int i, int bi, int bs) {
 
-        for( Octet o : this.liste ) {
+        for( Octet o : this.alo ) {
             if ( bi <= o.getValue() && o.getValue() <= bs ){
-                 o.ajouter(i);
+                o.ajouter(i);
             }
         }
 
 
     }
-
-
 
 
     /**
@@ -329,13 +273,13 @@ public class Message {
      */
     public void supprimer(int i) {
 
-        if (i < 0 || i > this.liste.size() ){
+        if (i < 0 || i > this.alo.size() ){
             throw new AssertionError("Erreur");
         }else {
-            this.liste.subList(0, i).clear();
+            this.alo.subList(0, i).clear();
         }
     }
-    
+
     /**
      * On enlève les éléments entre debut et fin inclus
      * @param debut
@@ -343,11 +287,12 @@ public class Message {
      * @exception AssertionError si on n'a pas 0<=debut<=fin<size()
      */
     public void supprimer(int debut, int fin) {
-        if (!(0 <= debut && debut <= fin && fin < this.liste.size() ) ){
+        if (!(0 <= debut && debut <= fin && fin < this.alo.size() ) ){
             throw new AssertionError("Erreur");
         }else {
-            this.liste.subList(debut, fin+1).clear();
+            this.alo.subList(debut, fin+1).clear();
         }
     }
+
 
 }
